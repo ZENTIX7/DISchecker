@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Discord Username Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:#2a2a3a;
+  --accent:#5865f2;--accent2:#57f287;--warn:#faa61a;--danger:#ed4245;
+  --text:#e0e0f0;--muted:#6b6b8a;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(88,101,242,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(88,101,242,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:620px;margin:0 auto;padding:24px 16px 80px}
+
+/* Header */
+header{margin-bottom:20px}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.logo-icon{width:40px;height:40px;flex-shrink:0;background:linear-gradient(135deg,#5865f2,#7289da);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(88,101,242,.4)}
+h1{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.subtitle{color:var(--muted);font-family:var(--mono);font-size:11px;margin-top:4px}
+
+/* Info banner */
+.info-banner{background:rgba(88,101,242,.08);border:1px solid rgba(88,101,242,.25);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#9ba8ff;line-height:1.6}
+.disclaimer{background:rgba(250,166,26,.08);border:1px solid rgba(250,166,26,.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#c8a04a;line-height:1.6}
+
+/* Card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title-badge{background:var(--accent);color:#fff;border-radius:999px;padding:2px 8px;font-size:10px}
+
+/* Token pool */
+.token-example{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.token-ex-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-family:var(--mono)}
+.token-ex-val{font-family:var(--mono);font-size:11px;word-break:break-all;line-height:1.7}
+.t1{color:#9ba8ff}.t2{color:#57f287}.t3{color:#faa61a}.td{color:var(--muted)}
+.token-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:5px}
+.tleg{font-size:10px;font-family:var(--mono);color:var(--muted)}
+
+.add-token-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.token-label-input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;width:90px;flex-shrink:0}
+.token-val-input{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none}
+.token-val-input:focus,.token-label-input:focus{border-color:var(--accent)}
+.btn-add-token{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans);white-space:nowrap;flex-shrink:0}
+.btn-add-token:disabled{opacity:.4;cursor:not-allowed}
+
+/* Pool list */
+.pool-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:220px;overflow-y:auto}
+.pool-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:8px;padding:10px 12px;border:1px solid var(--border);animation:pop .2s ease}
+.pool-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pd-valid{background:var(--accent2);box-shadow:0 0 6px rgba(87,242,135,.4)}
+.pd-invalid{background:var(--danger)}
+.pd-checking{background:var(--warn);animation:pulse 1s infinite}
+.pool-label{font-size:13px;font-weight:700;flex:1}
+.pool-meta{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.pool-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;flex-shrink:0}
+.pb-valid{background:rgba(87,242,135,.12);color:var(--accent2);border:1px solid rgba(87,242,135,.2)}
+.pb-invalid{background:rgba(237,66,69,.12);color:var(--danger);border:1px solid rgba(237,66,69,.2)}
+.pb-checking{background:rgba(250,166,26,.12);color:var(--warn);border:1px solid rgba(250,166,26,.2)}
+.pool-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;flex-shrink:0}
+.pool-remove:hover{color:var(--danger)}
+.pool-empty{text-align:center;padding:20px;color:var(--muted);font-size:13px;font-family:var(--mono)}
+
+/* Pool speed indicator */
+.speed-bar{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px}
+.speed-val{color:var(--accent2);font-weight:700;font-size:13px}
+
+/* Forms */
+.form-col{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.form-control{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:var(--sans);font-size:15px;outline:none;transition:border-color .2s;width:100%;-webkit-appearance:none}
+.form-control:focus{border-color:var(--accent)}
+select.form-control{cursor:pointer}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Toggles */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;border-radius:10px;padding:12px 14px;cursor:pointer;margin-bottom:10px;gap:12px}
+.toggle-row.green{background:rgba(87,242,135,.06);border:1px solid rgba(87,242,135,.2)}
+.toggle-row.blue{background:rgba(88,101,242,.06);border:1px solid rgba(88,101,242,.2)}
+.trow-left{display:flex;flex-direction:column;gap:2px}
+.trow-title{font-size:13px;font-weight:700}
+.trow-title.green{color:var(--accent2)}
+.trow-title.blue{color:#9ba8ff}
+.trow-desc{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.pill{width:44px;height:24px;border-radius:999px;background:var(--border);position:relative;flex-shrink:0;transition:background .2s}
+.pill.on-green{background:var(--accent2)}.pill.on-blue{background:var(--accent)}
+.pill::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s}
+.pill.on-green::after,.pill.on-blue::after{transform:translateX(20px)}
+
+/* Preview */
+.preview-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.8}
+.preview-box .hl{color:var(--accent2)}
+.preview-samples{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.preview-sample{background:rgba(88,101,242,.12);border:1px solid rgba(88,101,242,.2);border-radius:6px;padding:3px 8px;font-size:11px;color:#9ba8ff}
+
+/* Buttons */
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px 20px;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--sans);transition:all .2s;display:flex;align-items:center;gap:8px;width:100%;justify-content:center}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-stop{background:var(--danger);color:#fff;border:none;border-radius:10px;padding:14px 20px;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--sans);width:100%;display:none}
+.btn-row{display:flex;flex-direction:column;gap:8px}
+.btn-inline-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-sec{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--surface);border-radius:12px;padding:4px;border:1px solid var(--border)}
+.tab{flex:1;padding:10px 4px;text-align:center;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;color:var(--muted);border:none;background:none;font-family:var(--sans);line-height:1.2}
+.tab.active{background:var(--accent);color:#fff}
+.panel{display:none}.panel.active{display:block}
+
+/* Live request feed */
+.req-feed{background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:12px;display:none}
+.req-feed.on{display:block}
+.req-feed-title{font-size:10px;font-family:var(--mono);color:var(--muted);padding:8px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em}
+.req-feed-rows{max-height:110px;overflow-y:auto;display:flex;flex-direction:column}
+.req-row{display:flex;align-items:center;gap:8px;padding:6px 12px;font-family:var(--mono);font-size:11px;border-bottom:1px solid rgba(255,255,255,.03);animation:slideIn .15s ease}
+.rr-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rr-sending{background:var(--warn);animation:pulse .8s infinite}
+.rr-ok{background:var(--accent2)}
+.rr-taken{background:var(--danger)}
+.rr-ratelimit{background:#ff9500;animation:pulse .5s infinite}
+.rr-error{background:var(--muted)}
+.rr-name{flex:1;color:var(--text);word-break:break-all}
+.rr-via{color:var(--muted);font-size:10px;flex-shrink:0}
+.rr-code{padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.05);font-size:10px;flex-shrink:0}
+.rr-status{font-size:10px;font-weight:700;flex-shrink:0}
+.rrs-available{color:var(--accent2)}
+.rrs-taken{color:var(--danger)}
+.rrs-sending{color:var(--warn)}
+.rrs-error{color:var(--muted)}
+
+/* Progress */
+.progress-wrap{display:none;margin-top:14px}
+.progress-wrap.on{display:block}
+.pbar-track{background:rgba(0,0,0,.3);border-radius:999px;height:6px;overflow:hidden;margin-bottom:10px}
+.pbar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;width:0%;transition:width .35s}
+.pstats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pstat{background:var(--surface2);border-radius:6px;padding:8px 10px}
+.pstat-label{font-size:10px;color:var(--muted);margin-bottom:2px;font-family:var(--mono)}
+.pstat-val{color:var(--text);font-weight:700;font-size:14px;font-family:var(--mono)}
+.pstat.green .pstat-val{color:var(--accent2)}
+.pstat-wide{grid-column:span 2}
+.pstat-wide .pstat-val{font-size:12px;word-break:break-all}
+
+/* Results */
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;margin-top:20px}
+.results-title{font-size:13px;font-weight:700}
+.results-count{font-family:var(--mono);font-size:11px;background:rgba(87,242,135,.12);color:var(--accent2);padding:3px 8px;border-radius:999px;border:1px solid rgba(87,242,135,.25)}
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;max-height:300px;overflow-y:auto}
+.chip{background:var(--surface2);border:1px solid rgba(87,242,135,.25);border-radius:8px;padding:10px;font-family:var(--mono);font-size:12px;color:var(--accent2);display:flex;align-items:center;justify-content:space-between;gap:4px;animation:pop .2s ease}
+.chip span{word-break:break-all}
+.chip-copy{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px;flex-shrink:0}
+
+/* Manual */
+.manual-ta{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;resize:vertical;min-height:80px;-webkit-appearance:none;margin-bottom:10px;display:block}
+.manual-ta:focus{border-color:var(--accent)}
+.manual-hint{font-size:11px;color:var(--muted);margin-bottom:12px;font-family:var(--mono);line-height:1.5}
+.manual-results{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;margin-top:12px}
+.mrow{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:12px;animation:pop .2s ease}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dot-checking{background:var(--warn);animation:pulse 1s infinite}
+.dot-available{background:var(--accent2);box-shadow:0 0 8px rgba(87,242,135,.5)}
+.dot-taken{background:var(--danger)}
+.dot-error{background:var(--muted)}
+.mrow-name{font-family:var(--mono);font-size:13px;flex:1;word-break:break-all}
+.mrow-label{font-size:11px;font-weight:700;flex-shrink:0}
+.lbl-available{color:var(--accent2)}
+.lbl-taken{color:var(--danger)}
+.lbl-checking{color:var(--warn)}
+.lbl-error{color:var(--muted)}
+
+@keyframes pop{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 71 55" fill="white">
+          <path d="M60.1 4.9A58.5 58.5 0 0 0 45.6.7a.2.2 0 0 0-.2.1 40.7 40.7 0 0 0-1.8 3.7 54 54 0 0 0-16.2 0A37.5 37.5 0 0 0 25.6.8a.2.2 0 0 0-.2-.1A58.4 58.4 0 0 0 10.9 4.9a.2.2 0 0 0-.1.1C1.6 18.7-.9 32.1.3 45.3a.2.2 0 0 0 .1.2 58.8 58.8 0 0 0 17.7 9 .2.2 0 0 0 .3-.1 42 42 0 0 0 3.6-5.9.2.2 0 0 0-.1-.3 38.7 38.7 0 0 1-5.5-2.6.2.2 0 0 1 0-.4l1.1-.8a.2.2 0 0 1 .2 0c11.5 5.3 24 5.3 35.4 0a.2.2 0 0 1 .2 0l1.1.8a.2.2 0 0 1 0 .4 36 36 0 0 1-5.5 2.6.2.2 0 0 0-.1.3 47 47 0 0 0 3.6 5.9.2.2 0 0 0 .3.1 58.6 58.6 0 0 0 17.7-9 .2.2 0 0 0 .1-.2c1.5-15.3-2.5-28.6-10.5-40.4a.2.2 0 0 0-.1-.1z"/>
+        </svg>
+      </div>
+      <h1>Username Finder</h1>
+    </div>
+    <p class="subtitle">// multi-bot · proxy-based · hostable</p>
+  </header>
+
+  <div class="info-banner">
+    🔒 <strong>Tokens stay on the server</strong> — the frontend only talks to your local proxy (<code>localhost:3000</code>). Discord is never called directly from the browser, which is why this can be hosted without being flagged.
+  </div>
+  <div class="disclaimer">⚠️ For finding <strong>your own</strong> username only. Do not hoard or sell usernames — Discord ToS violation.</div>
+
+  <!-- ══ BOT POOL ══ -->
+  <div class="card">
+    <div class="card-title">
+      🤖 Bot Token Pool
+      <span class="card-title-badge" id="poolCountBadge">0 bots</span>
+    </div>
+
+    <!-- Token format example -->
+    <div class="token-example">
+      <div class="token-ex-label">What a real bot token looks like:</div>
+      <div class="token-ex-val">
+        <span class="t1">MTIzNDU2Nzg5MDEy</span><span class="td">.</span><span class="t2">GAbcXY</span><span class="td">.</span><span class="t3">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>
+      </div>
+      <div class="token-legend">
+        <div class="tleg"><span class="t1">■</span> User ID (base64)</div>
+        <div class="tleg"><span class="t2">■</span> Timestamp</div>
+        <div class="tleg"><span class="t3">■</span> HMAC secret</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:5px">3 parts · dots as separators · ~70 chars total</div>
+    </div>
+
+    <!-- Add token -->
+    <div class="add-token-row">
+      <input class="token-label-input" id="newTokenLabel" type="text" placeholder="Label" value="Bot 1">
+      <input class="token-val-input" id="newTokenVal" type="password" placeholder="Paste token (MTIz…xxxx)">
+      <button class="btn-add-token" id="btnAddToken" onclick="addToken()">Add</button>
+    </div>
+
+    <!-- Pool list -->
+    <div class="pool-list" id="poolList">
+      <div class="pool-empty" id="poolEmpty">No bots added yet. Add at least one to start scanning.</div>
+    </div>
+
+    <!-- Speed indicator -->
+    <div class="speed-bar" id="speedBar">
+      <span>⚡ Est. speed:</span>
+      <span class="speed-val" id="speedVal">—</span>
+      <span style="margin-left:auto;font-size:10px">~1 check/sec per bot · bots work in parallel</span>
+    </div>
+
+    <div class="btn-inline-row" style="margin-top:8px">
+      <button class="btn-sec" onclick="clearPool()">🗑 Clear All Bots</button>
+    </div>
+  </div>
+
+  <!-- ══ TABS ══ -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('generate',this)">⚡ Generate & Scan</button>
+    <button class="tab" onclick="switchTab('manual',this)">✏️ Manual Check</button>
+  </div>
+
+  <!-- ══ GENERATE ══ -->
+  <div class="panel active" id="panel-generate">
+    <div class="card">
+      <div class="card-title">Generator Settings</div>
+
+      <div class="toggle-row green" onclick="toggleSmart()">
+        <div class="trow-left">
+          <div class="trow-title green">🎲 Smart Uncommon Mode</div>
+          <div class="trow-desc">Rare combos first: 7pce, rttd, q17j…</div>
+        </div>
+        <div class="pill on-green" id="smartPill"></div>
+      </div>
+
+      <div class="toggle-row blue" onclick="toggleAllChars()">
+        <div class="trow-left">
+          <div class="trow-title blue">🔡 Try All Characters Together</div>
+          <div class="trow-desc">a–z + 0–9 + _ in one combined pool</div>
+        </div>
+        <div class="pill" id="allCharsPill"></div>
+      </div>
+
+      <div class="form-col">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Length</label>
+            <select class="form-control" id="genLength" onchange="updatePreview()">
+              <option value="2">2 chars</option>
+              <option value="3">3 chars</option>
+              <option value="4" selected>4 chars</option>
+              <option value="5">5 chars</option>
+              <option value="6">6 chars</option>
+              <option value="7">7 chars</option>
+              <option value="8">8 chars</option>
+            </select>
+          </div>
+          <div class="form-group" id="charsetGroup">
+            <label>Charset</label>
+            <select class="form-control" id="genCharset" onchange="charsetChange()">
+              <option value="letters">a–z only</option>
+              <option value="numbers">0–9 only</option>
+              <option value="alphanumeric" selected>a–z + 0–9</option>
+              <option value="letters_under">a–z + _</option>
+              <option value="alphanum_under">a–z + 0–9 + _</option>
+              <option value="custom">Custom…</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" id="customGroup" style="display:none">
+          <label>Custom characters</label>
+          <input class="form-control" id="customChars" type="text" placeholder="e.g. abc123_" oninput="updatePreview()">
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label>Prefix (optional)</label>
+            <input class="form-control" id="genPrefix" type="text" placeholder="e.g. x_" maxlength="10" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label>Suffix (optional)</label>
+            <input class="form-control" id="genSuffix" type="text" placeholder="e.g. _gg" maxlength="10" oninput="updatePreview()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Max to check</label>
+          <select class="form-control" id="genLimit" onchange="updatePreview()">
+            <option value="50">50 checks</option>
+            <option value="100" selected>100 checks</option>
+            <option value="200">200 checks</option>
+            <option value="300">300 checks</option>
+            <option value="500">500 checks</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="preview-box" id="previewBox">Loading…</div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="startBtn" onclick="startScan()">⚡ Start Scan</button>
+        <button class="btn-stop" id="stopBtn" onclick="stopScan()">⏹ Stop Scan</button>
+        <div class="btn-inline-row">
+          <button class="btn-sec" id="exportBtn" style="display:none" onclick="exportResults()">⬇ Export .txt</button>
+        </div>
+      </div>
+
+      <!-- Live request feed -->
+      <div class="req-feed" id="reqFeed">
+        <div class="req-feed-title">📡 Live Requests</div>
+        <div class="req-feed-rows" id="reqFeedRows"></div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-wrap" id="progressWrap">
+        <div style="height:12px"></div>
+        <div class="pbar-track"><div class="pbar-fill" id="pbarFill"></div></div>
+        <div class="pstats">
+          <div class="pstat"><div class="pstat-label">CHECKED</div><div class="pstat-val" id="pChecked">0</div></div>
+          <div class="pstat green"><div class="pstat-label">FOUND</div><div class="pstat-val" id="pFound">0</div></div>
+          <div class="pstat pstat-wide"><div class="pstat-label">STATUS</div><div class="pstat-val" id="pCurrent">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="genResultsSection" style="display:none">
+      <div class="results-header">
+        <div class="results-title">✅ Available Usernames</div>
+        <div class="results-count" id="genCount">0 found</div>
+      </div>
+      <div class="results-grid" id="genGrid"></div>
+    </div>
+  </div>
+
+  <!-- ══ MANUAL ══ -->
+  <div class="panel" id="panel-manual">
+    <div class="card">
+      <div class="card-title">Manual Username Check</div>
+      <textarea class="manual-ta" id="manualInput" placeholder="Type usernames here, one per line or comma-separated:
+
+7pce
+rttd, q17j, c7jf
+coolname_99"></textarea>
+      <div class="manual-hint">// One per line or comma-separated · 2–32 chars each</div>
+
+      <div class="req-feed" id="reqFeedM" style="margin-bottom:12px">
+        <div class="req-feed-title">📡 Live Requests</div>
+        <div class="req-feed-rows" id="reqFeedRowsM"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="checkManual()">Check Usernames →</button>
+        <div class="btn-inline-row">
+          <button class="btn-sec" onclick="exportManual()">⬇ Export Available</button>
+          <button class="btn-sec" onclick="clearManual()">🗑 Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="manual-results" id="manualResults"></div>
+  </div>
+
+</div>
+<script>
+// ═══════════════════════════
+//  State
+// ═══════════════════════════
+let scanning = false, stopReq = false;
+let genAvailable = [], manualAvailable = [];
+let smartMode = true, allCharsMode = false;
+let localPool = []; // mirrors server pool for UI display
+
+const API = ''; // empty = same origin (localhost:3000)
+
+const CHARSETS = {
+  letters:'abcdefghijklmnopqrstuvwxyz',
+  numbers:'0123456789',
+  alphanumeric:'abcdefghijklmnopqrstuvwxyz0123456789',
+  letters_under:'abcdefghijklmnopqrstuvwxyz_',
+  alphanum_under:'abcdefghijklmnopqrstuvwxyz0123456789_',
+  all:'abcdefghijklmnopqrstuvwxyz0123456789_',
+};
+
+window.onload = () => {
+  updatePreview();
+  syncPool();
+};
+
+// ═══════════════════════════
+//  Tabs
+// ═══════════════════════════
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+// ═══════════════════════════
+//  Token Pool
+// ═══════════════════════════
+async function addToken() {
+  const label = document.getElementById('newTokenLabel').value.trim() || 'Bot';
+  const token = document.getElementById('newTokenVal').value.trim();
+  if (!token) { alert('Paste a token first.'); return; }
+
+  // Basic format check client-side
+  const parts = token.split('.');
+  if (parts.length !== 3 || token.length < 50) {
+    alert('That doesn\'t look like a valid token.\nA bot token has 3 parts separated by dots and is ~70+ characters long.');
+    return;
+  }
+
+  const btn = document.getElementById('btnAddToken');
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  // Add temp item to UI while verifying
+  const tempId = 'temp-' + Date.now();
+  addPoolItem({ id: tempId, label, valid: null, reqCount: 0, errorCount: 0 });
+
+  try {
+    const res = await fetch(API + '/api/verify-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, label })
+    });
+    const data = await res.json();
+
+    if (data.valid) {
+      // Send to server pool
+      const poolRes = await fetch(API + '/api/tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokens: [...getStoredTokens(), { token, label }] })
+      });
+      const poolData = await poolRes.json();
+      storeToken(token, label);
+      await syncPool();
+      document.getElementById('newTokenVal').value = '';
+      document.getElementById('newTokenLabel').value = 'Bot ' + (localPool.length + 1);
+    } else {
+      removePoolItem(tempId);
+      alert('❌ Token is invalid or expired. Double-check it and try again.');
+    }
+  } catch(e) {
+    removePoolItem(tempId);
+    alert('Could not reach the server. Make sure server.js is running (node server.js).');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Add';
+}
+
+// Local token storage (just labels + obfuscated refs, real tokens only on server)
+function storeToken(token, label) {
+  const stored = JSON.parse(localStorage.getItem('dc_tokens') || '[]');
+  stored.push({ token, label });
+  localStorage.setItem('dc_tokens', JSON.stringify(stored));
+}
+
+function getStoredTokens() {
+  return JSON.parse(localStorage.getItem('dc_tokens') || '[]');
+}
+
+async function syncPool() {
+  try {
+    const res = await fetch(API + '/api/tokens');
+    const data = await res.json();
+    localPool = data.tokens || [];
+    renderPool();
+    updateSpeedBar();
+  } catch(e) {
+    // server not running or first load
+  }
+}
+
+function renderPool() {
+  const list = document.getElementById('poolList');
+  const empty = document.getElementById('poolEmpty');
+  const badge = document.getElementById('poolCountBadge');
+  const validCount = localPool.filter(t=>t.valid).length;
+  badge.textContent = `${validCount} bot${validCount!==1?'s':''} active`;
+
+  list.innerHTML = '';
+  if (!localPool.length) {
+    list.appendChild(empty);
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  localPool.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'pool-item';
+    d.id = 'pi-' + i;
+    const dotCls = t.valid===null ? 'pd-checking' : t.valid ? 'pd-valid' : 'pd-invalid';
+    const badgeCls = t.valid===null ? 'pb-checking' : t.valid ? 'pb-valid' : 'pb-invalid';
+    const badgeTxt = t.valid===null ? 'Verifying…' : t.valid ? 'Valid ✓' : 'Invalid ✗';
+    d.innerHTML = `
+      <div class="pool-dot ${dotCls}"></div>
+      <div class="pool-label">${t.label}</div>
+      <div class="pool-meta">Requests: ${t.reqCount||0} · Errors: ${t.errorCount||0}</div>
+      <div class="pool-badge ${badgeCls}">${badgeTxt}</div>
+      <button class="pool-remove" onclick="removeToken(${i})" title="Remove">×</button>
+    `;
+    list.appendChild(d);
+  });
+}
+
+function addPoolItem(item) {
+  const list = document.getElementById('poolList');
+  document.getElementById('poolEmpty').style.display = 'none';
+  const d = document.createElement('div');
+  d.className = 'pool-item';
+  d.id = item.id;
+  d.innerHTML = `
+    <div class="pool-dot pd-checking"></div>
+    <div class="pool-label">${item.label}</div>
+    <div class="pool-meta" style="flex:1">Verifying token…</div>
+    <div class="pool-badge pb-checking">Checking…</div>
+  `;
+  list.appendChild(d);
+}
+
+function removePoolItem(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+async function removeToken(index) {
+  const stored = getStoredTokens();
+  stored.splice(index, 1);
+  localStorage.setItem('dc_tokens', JSON.stringify(stored));
+  // Re-push remaining tokens to server
+  try {
+    await fetch(API + '/api/tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tokens: stored })
+    });
+  } catch(e) {}
+  await syncPool();
+}
+
+async function clearPool() {
+  if (!confirm('Remove all bots?')) return;
+  localStorage.removeItem('dc_tokens');
+  try { await fetch(API + '/api/tokens', { method: 'DELETE' }); } catch(e) {}
+  localPool = [];
+  renderPool();
+  updateSpeedBar();
+}
+
+function updateSpeedBar() {
+  const valid = localPool.filter(t=>t.valid).length;
+  const el = document.getElementById('speedVal');
+  if (!valid) { el.textContent = '— (no bots)'; return; }
+  const cps = (valid * 1).toFixed(0);
+  const per100 = Math.ceil(100 / valid / 60);
+  el.textContent = `~${cps} check/sec (${valid} bot${valid>1?'s':''} · 100 checks ≈ ${per100} min)`;
+}
+
+// ═══════════════════════════
+//  Charset / Toggles
+// ═══════════════════════════
+function charsetChange() {
+  const v = document.getElementById('genCharset').value;
+  document.getElementById('customGroup').style.display = v==='custom'?'flex':'none';
+  updatePreview();
+}
+
+function getCharset() {
+  if (allCharsMode) return CHARSETS.all;
+  const v = document.getElementById('genCharset').value;
+  if (v==='custom') return document.getElementById('customChars').value||'abc';
+  return CHARSETS[v]||CHARSETS.alphanumeric;
+}
+
+function toggleSmart() {
+  smartMode = !smartMode;
+  document.getElementById('smartPill').className = 'pill'+(smartMode?' on-green':'');
+  updatePreview();
+}
+
+function toggleAllChars() {
+  allCharsMode = !allCharsMode;
+  document.getElementById('allCharsPill').className = 'pill'+(allCharsMode?' on-blue':'');
+  const cg = document.getElementById('charsetGroup');
+  cg.style.opacity = allCharsMode?'0.35':'1';
+  cg.style.pointerEvents = allCharsMode?'none':'';
+  updatePreview();
+}
+
+// ═══════════════════════════
+//  Smart Generator
+// ═══════════════════════════
+function smartGenerate(length, charset, prefix, suffix, limit) {
+  const chars = charset.split('');
+  const hasLetters = /[a-z]/i.test(charset);
+  const hasNums = /[0-9]/.test(charset);
+  const hasUnder = charset.includes('_');
+  const seen = new Set();
+  const pool = [];
+  function score(s) {
+    let sc=0;
+    if(hasNums&&hasLetters&&/[a-z][0-9]|[0-9][a-z]/i.test(s))sc+=4;
+    if(hasUnder&&/[^_]_[^_]/.test(s))sc+=3;
+    if(hasLetters&&!/[aeiou]/i.test(s))sc+=3;
+    if(/^[0-9]/.test(s))sc+=2;
+    if(hasNums&&/[0-9]{2}/.test(s))sc+=1;
+    if(hasLetters&&/[bcdfghjklmnpqrstvwxyz]{3}/i.test(s))sc+=2;
+    return sc;
+  }
+  const target = Math.min(limit*25,100000);
+  for(let i=0;i<target&&pool.length<limit*6;i++){
+    let combo='';
+    for(let j=0;j<length;j++) combo+=chars[Math.floor(Math.random()*chars.length)];
+    const full=prefix+combo+suffix;
+    if(!seen.has(full)&&full.length>=2&&full.length<=32){seen.add(full);pool.push({name:full,sc:score(combo)});}
+  }
+  pool.sort((a,b)=>b.sc-a.sc);
+  return pool.slice(0,limit).map(p=>p.name);
+}
+
+function* seqGenerate(length, charset, prefix, suffix) {
+  const chars=charset.split('');
+  function* r(cur){if(cur.length===length){yield prefix+cur+suffix;return}for(const c of chars)yield* r(cur+c);}
+  yield* r('');
+}
+
+// ═══════════════════════════
+//  Preview
+// ═══════════════════════════
+function updatePreview() {
+  const length=parseInt(document.getElementById('genLength').value);
+  const charset=getCharset();
+  const prefix=document.getElementById('genPrefix').value||'';
+  const suffix=document.getElementById('genSuffix').value||'';
+  const limit=parseInt(document.getElementById('genLimit').value);
+  const total=Math.pow(charset.length,length);
+  const willCheck=Math.min(total,limit);
+  const validBots=localPool.filter(t=>t.valid).length||1;
+  const estMin=Math.max(1,Math.ceil(willCheck/validBots/60));
+
+  let samples;
+  if(smartMode){samples=smartGenerate(length,charset,prefix,suffix,7);}
+  else{samples=[];for(const n of seqGenerate(length,charset,prefix,suffix)){samples.push(n);if(samples.length>=7)break;}}
+
+  document.getElementById('previewBox').innerHTML=
+    `<div>Charset: <span class="hl">${allCharsMode?'ALL (a–z+0–9+_)':document.getElementById('genCharset').selectedOptions[0]?.text||''}</span> · Size: <span class="hl">${charset.length} chars</span></div>`+
+    `<div>Total combos: <span class="hl">${total.toLocaleString()}</span> · Checking: <span class="hl">${willCheck}</span></div>`+
+    `<div>Speed: <span class="hl">${validBots} bot${validBots>1?'s':''}</span> · Est: <span class="hl">~${estMin} min</span></div>`+
+    `<div style="margin-top:8px;font-size:10px;color:var(--muted)">Sample names:</div>`+
+    `<div class="preview-samples">${samples.map(s=>`<span class="preview-sample">${s}</span>`).join('')}</div>`;
+}
+
+// ═══════════════════════════
+//  Request Feed
+// ═══════════════════════════
+const MAX_FEED_ROWS = 30;
+
+function addFeedRow(feedId, {username, status, via, code}) {
+  const feed = document.getElementById(feedId);
+  feed.classList.add('on');
+  const rows = document.getElementById(feedId+'Rows');
+
+  const d = document.createElement('div');
+  d.className = 'req-row';
+
+  const dotMap = {sending:'rr-sending',available:'rr-ok',taken:'rr-taken',ratelimit:'rr-ratelimit',error:'rr-error',done:'rr-ok'};
+  const labelMap = {sending:'sending…',available:'AVAILABLE',taken:'taken',ratelimit:'rate limit',error:'error',done:'done'};
+  const lblCls = {sending:'rrs-sending',available:'rrs-available',taken:'rrs-taken',ratelimit:'rrs-sending',error:'rrs-error',done:'rrs-available'};
+
+  d.innerHTML = `
+    <div class="rr-dot ${dotMap[status]||'rr-error'}"></div>
+    <div class="rr-name">${username||'—'}</div>
+    ${via?`<div class="rr-via">${via}</div>`:''}
+    ${code?`<div class="rr-code">${code}</div>`:''}
+    <div class="rr-status ${lblCls[status]||''}">${labelMap[status]||status}</div>
+  `;
+  rows.prepend(d);
+
+  // Trim old rows
+  while(rows.children.length > MAX_FEED_ROWS) rows.removeChild(rows.lastChild);
+}
+
+// ═══════════════════════════
+//  API calls → via server proxy
+// ═══════════════════════════
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+async function checkViaProxy(username, feedId) {
+  addFeedRow(feedId, {username, status:'sending'});
+  try {
+    const res = await fetch(API + '/api/check', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username})
+    });
+
+    if (res.status === 429) {
+      const d = await res.json().catch(()=>({}));
+      addFeedRow(feedId, {username, status:'ratelimit', code:'429'});
+      await sleep((d.retry_after||2)*1000);
+      return checkViaProxy(username, feedId);
+    }
+    if (res.status === 503) {
+      addFeedRow(feedId, {username, status:'error', code:'503'});
+      throw new Error('no_tokens');
+    }
+
+    const data = await res.json();
+
+    if (data.error === 'Token invalidated') {
+      await syncPool(); // refresh pool display
+      return checkViaProxy(username, feedId); // retry with next token
+    }
+
+    addFeedRow(feedId, {username, status: data.status||'error', via: data.via, code: res.status});
+    return data.status; // 'available' | 'taken' | 'unknown'
+  } catch(e) {
+    if (e.message === 'no_tokens') throw e;
+    addFeedRow(feedId, {username, status:'error', code:'NET'});
+    return 'error';
+  }
+}
+
+// ═══════════════════════════
+//  Scan
+// ═══════════════════════════
+async function startScan() {
+  const validBots = localPool.filter(t=>t.valid).length;
+  if (!validBots) { alert('Add at least one valid bot token first!'); return; }
+  if (scanning) return;
+
+  scanning=true; stopReq=false; genAvailable=[];
+
+  const length=parseInt(document.getElementById('genLength').value);
+  const charset=getCharset();
+  const prefix=document.getElementById('genPrefix').value||'';
+  const suffix=document.getElementById('genSuffix').value||'';
+  const limit=parseInt(document.getElementById('genLimit').value);
+
+  if (prefix.length+length+suffix.length>32){alert('Total username length would exceed 32 chars.');scanning=false;return;}
+
+  const toCheck = smartMode
+    ? smartGenerate(length,charset,prefix,suffix,limit)
+    : (()=>{const a=[];for(const n of seqGenerate(length,charset,prefix,suffix)){a.push(n);if(a.length>=limit)break;}return a;})();
+
+  document.getElementById('startBtn').disabled=true;
+  document.getElementById('stopBtn').style.display='block';
+  document.getElementById('exportBtn').style.display='none';
+  document.getElementById('progressWrap').className='progress-wrap on';
+  document.getElementById('genResultsSection').style.display='block';
+  document.getElementById('genGrid').innerHTML='';
+  document.getElementById('pChecked').textContent='0';
+  document.getElementById('pFound').textContent='0';
+  document.getElementById('pbarFill').style.width='0%';
+  document.getElementById('pCurrent').textContent='Scanning…';
+
+  const total=toCheck.length;
+  let checked=0,found=0;
+
+  // Multi-bot parallel scanning using a queue + worker pool
+  const queue = [...toCheck];
+  const numWorkers = Math.min(validBots, 5); // max 5 parallel workers
+
+  async function worker() {
+    while (queue.length && !stopReq) {
+      const username = queue.shift();
+      if (!username) break;
+      let status;
+      try { status = await checkViaProxy(username, 'reqFeed'); }
+      catch(e) {
+        if (e.message==='no_tokens'){stopReq=true;break;}
+        status='error';
+      }
+      checked++;
+      document.getElementById('pChecked').textContent=checked;
+      document.getElementById('pbarFill').style.width=(checked/total*100)+'%';
+      if(status==='available'){
+        found++;
+        genAvailable.push(username);
+        document.getElementById('pFound').textContent=found;
+        document.getElementById('genCount').textContent=found+' found';
+        addChip(username);
+      }
+      await sleep(60); // per-worker rate: ~16/sec, with N workers = N×16/sec
+    }
+  }
+
+  // Launch N workers simultaneously
+  await Promise.all(Array.from({length:numWorkers},()=>worker()));
+
+  scanning=false;
+  document.getElementById('startBtn').disabled=false;
+  document.getElementById('stopBtn').style.display='none';
+  if(genAvailable.length) document.getElementById('exportBtn').style.display='inline-flex';
+  document.getElementById('pCurrent').textContent=stopReq?'⏹ Stopped':'✓ Scan complete';
+  addFeedRow('reqFeed',{username:'',status:'done',code:''});
+  await syncPool();
+  updatePreview();
+}
+
+function stopScan(){stopReq=true;}
+
+function addChip(username){
+  const grid=document.getElementById('genGrid');
+  const d=document.createElement('div');d.className='chip';
+  const safe=username.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  d.innerHTML=`<span>${username}</span><button class="chip-copy" onclick="doCopy('${safe}',this)">⎘</button>`;
+  grid.appendChild(d);
+}
+
+function doCopy(text,btn){
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓';setTimeout(()=>btn.textContent='⎘',1200);});
+}
+
+// ═══════════════════════════
+//  Export
+// ═══════════════════════════
+function exportResults(){if(!genAvailable.length)return;dl('available_usernames.txt',genAvailable.join('\n'));}
+function exportManual(){if(!manualAvailable.length){alert('No available usernames yet.');return;}dl('available_manual.txt',manualAvailable.join('\n'));}
+function dl(name,text){const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(text);a.download=name;a.click();}
+
+// ═══════════════════════════
+//  Manual Check
+// ═══════════════════════════
+async function checkManual(){
+  const validBots=localPool.filter(t=>t.valid).length;
+  if(!validBots){alert('Add at least one valid bot token first!');return;}
+  const raw=document.getElementById('manualInput').value.trim();
+  if(!raw)return;
+  const names=raw.split(/[\n,]+/).map(u=>u.trim()).filter(u=>u.length>=2&&u.length<=32);
+  if(!names.length){alert('Enter at least one valid username (2–32 chars).');return;}
+  document.getElementById('manualInput').value='';
+  document.getElementById('reqFeedM').classList.add('on');
+
+  for(const name of names){
+    const rowId=addMRow(name);
+    let status;
+    try{status=await checkViaProxy(name,'reqFeedM');}
+    catch(e){status='error';}
+    updateMRow(rowId,status);
+    if(status==='available')manualAvailable.push(name);
+    await sleep(80);
+  }
+  await syncPool();
+}
+
+function addMRow(name){
+  const id='mr'+Date.now()+Math.random().toString(36).slice(2,5);
+  const container=document.getElementById('manualResults');
+  const d=document.createElement('div');d.className='mrow';d.id=id;
+  d.innerHTML=`<div class="dot dot-checking" id="${id}dot"></div><div class="mrow-name">${name}</div><div class="mrow-label lbl-checking" id="${id}lbl">checking…</div>`;
+  container.prepend(d);
+  return id;
+}
+
+function updateMRow(id,status){
+  const dot=document.getElementById(id+'dot');
+  const lbl=document.getElementById(id+'lbl');
+  if(!dot||!lbl)return;
+  dot.className='dot dot-'+status;
+  if(status==='available'){lbl.textContent='AVAILABLE ✓';lbl.className='mrow-label lbl-available';}
+  else if(status==='taken'){lbl.textContent='Taken';lbl.className='mrow-label lbl-taken';}
+  else{lbl.textContent='Error';lbl.className='mrow-label lbl-error';}
+}
+
+function clearManual(){document.getElementById('manualResults').innerHTML='';manualAvailable=[];}
+</script>
+</body>
+</html>
